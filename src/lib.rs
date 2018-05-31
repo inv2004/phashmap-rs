@@ -1,6 +1,11 @@
 #![feature(specialization)]
 #![feature(iterator_flatten)]
 
+#![feature(test)]
+
+extern crate test;
+
+
 use std::collections::hash_map::RandomState;
 use std::hash::BuildHasher;
 use std::hash::Hasher;
@@ -153,3 +158,14 @@ impl<K: Hash + Eq + Clone,V : Clone,S: BuildHasher + Default> IntoIterator for P
 //     }
 // }
 
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use test::Bencher;
+
+    #[bench]
+    fn bench_std_hashmap_insert(b: &mut Bencher) {
+        b.iter(|| {
+        });
+    }
+}
