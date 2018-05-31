@@ -37,8 +37,8 @@ impl<K: Hash + Eq + Clone,V : Clone,S: BuildHasher + Default> PHashMap<K,V,S> {
     fn push(&mut self, k: K, v: V) {
         let i = self.get_i(&k);
 
-        self.keys[i].push(k.clone());
-        self.vals[i].push(v.clone());
+        self.keys[i].push(k);
+        self.vals[i].push(v);
         self.stat += 1;
     }
 
@@ -80,7 +80,7 @@ impl<K: Hash + Eq + Clone,V : Clone,S: BuildHasher + Default> PHashMap<K,V,S> {
         } else {
             let len = self.keys[i].len();
 
-            self.keys[i].push(k.clone());
+            self.keys[i].push(k);
             self.vals[i].push(v);
             self.stat += 1;
             &mut self.vals[i][len]
