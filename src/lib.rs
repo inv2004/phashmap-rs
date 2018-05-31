@@ -63,19 +63,19 @@ impl<K: Hash + Eq + Clone,V : Clone,S: BuildHasher + Default> PHashMap<K,V,S> {
         self.push(k, v);
     }
 
-    pub fn get(&self, k: &K) -> Option<&V> {
-        let i = self.get_i(k);
-        self.keys[i].iter().position(|ref x| *x == k).map(|x| &self.vals[i][x])
+    pub fn get(&self, k: K) -> Option<&V> {
+        let i = self.get_i(&k);
+        self.keys[i].iter().position(|x| *x == k).map(|x| &self.vals[i][x])
     }
 
-    pub fn update(&mut self, k: &K, v: V) {
-        let i = self.get_i(k);
-        self.keys[i].iter().position(|ref x| *x == k).map(|x| self.vals[i][x] = v);
+    pub fn update(&mut self, k: K, v: V) {
+        let i = self.get_i(&k);
+        self.keys[i].iter().position(|x| *x == k).map(|x| self.vals[i][x] = v);
     }
 
-    pub fn get_mut_def(&mut self, k: &K, v: V) -> &mut V{
-        let i = self.get_i(k);
-        if let Some(x) = self.keys[i].iter().position(|ref x| *x == k) {
+    pub fn get_mut_def(&mut self, k: K, v: V) -> &mut V{
+        let i = self.get_i(&k);
+        if let Some(x) = self.keys[i].iter().position(|x| *x == k) {
             &mut self.vals[i][x]
         } else {
             let len = self.keys[i].len();
