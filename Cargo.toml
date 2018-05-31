@@ -4,3 +4,4 @@ version = "0.1.0"
 authors = ["Your Name <inv2004@gmail.com>"]
 
 [dependencies]
+indexmap = "*"

@@ -5,6 +5,7 @@
 
 extern crate test;
 
+extern crate indexmap;
 
 use std::collections::hash_map::RandomState;
 use std::hash::BuildHasher;
@@ -160,9 +161,11 @@ impl<K: Hash + Eq + Clone,V : Clone,S: BuildHasher + Default> IntoIterator for P
 
 #[cfg(test)]
 mod tests {
+
     use super::*;
     use test::Bencher;
     use std::collections::HashMap;
+    use indexmap::IndexMap;
 
     #[bench]
     fn bench_std_hashmap_insert(b: &mut Bencher) {
@@ -186,4 +189,14 @@ mod tests {
         });
     }
 
+    #[bench]
+    fn bench_indexmap_insert(b: &mut Bencher) {
+        b.iter(|| {
+            let mut h = IndexMap::new();
+            for x in 0..10000 {
+                h.insert(x, 1);
+            }
+            h
+        });
+    }
 }
