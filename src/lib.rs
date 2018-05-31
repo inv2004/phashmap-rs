@@ -162,10 +162,28 @@ impl<K: Hash + Eq + Clone,V : Clone,S: BuildHasher + Default> IntoIterator for P
 mod tests {
     use super::*;
     use test::Bencher;
+    use std::collections::HashMap;
 
     #[bench]
     fn bench_std_hashmap_insert(b: &mut Bencher) {
         b.iter(|| {
+            let mut h = HashMap::new();
+            for x in 0..10000 {
+                h.insert(x, 1);
+            }
+            h
         });
     }
+
+    #[bench]
+    fn bench_phashmap_insert(b: &mut Bencher) {
+        b.iter(|| {
+            let mut h: PHashMap<u16, u16> = PHashMap::new();
+            for x in 0..10000 {
+                h.insert(x, 1);
+            }
+            h
+        });
+    }
+
 }
