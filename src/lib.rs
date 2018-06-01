@@ -13,8 +13,7 @@ use std::hash::Hasher;
 use std::hash::Hash;
 
 pub struct PHashMap<K,V,S = RandomState>{
-    keys: Vec<Vec<K>>,
-    vals: Vec<Vec<V>>,
+    kv: Vec<Vec<(K,V)>>,
     hash_builder: S,
     stat: usize
 }
@@ -26,8 +25,7 @@ impl<K: Hash + Eq + Clone,V : Clone,S: BuildHasher + Default> PHashMap<K,V,S> {
 
     pub fn with_capacity(size: usize) -> PHashMap<K,V,S> {
         PHashMap{
-            keys: vec![vec![]; size],
-            vals: vec![vec![]; size],
+            kv: vec![vec![]; size],
             hash_builder: S::default(),
             stat: 0
         }
@@ -37,65 +35,64 @@ impl<K: Hash + Eq + Clone,V : Clone,S: BuildHasher + Default> PHashMap<K,V,S> {
         let mut hasher = self.hash_builder.build_hasher();
         k.hash(&mut hasher);
         let hash = hasher.finish();
-        hash as usize % self.keys.len()
+        hash as usize % self.kv.len()
     }
 
-    fn push(&mut self, k: K, v: V) {
-        let i = self.get_i(&k);
+    fn push(&mut self, kv: (K, V)) {
+        let i = self.get_i(&kv.0);
 
-        self.keys[i].push(k);
-        self.vals[i].push(v);
+        self.kv[i].push(kv);
         self.stat += 1;
     }
 
     fn rehash(&mut self) {
-        let len = self.keys.len();
+        let len = self.kv.len();
         let len = if len == 0 { 1 } else { 2 * len };
         let mut h = Self::with_capacity(len);
 
-        self.keys.iter().flatten().zip(self.vals.iter().flatten())
-            .for_each(|(k,v)| {
-                h.push(k.clone(), v.clone());
+        self.kv.iter().flatten()
+            .for_each(|x| {
+                h.push(x.clone());
             });
         
         *self = h;
     }
 
     pub fn insert(&mut self, k: K, v: V) {
-        if self.stat >= 3 * self.keys.len() / 4 {
+        if self.stat >= 3 * self.kv.len() / 4 {
             self.rehash();
         }
 
-        self.push(k, v);
+        self.push((k, v));
     }
 
     pub fn get(&self, k: K) -> Option<&V> {
         let i = self.get_i(&k);
-        self.keys[i].iter().position(|x| *x == k).map(|x| &self.vals[i][x])
+        self.kv[i].iter().find(|(x,_)| *x == k).map(|(_,y)| y)
     }
 
     pub fn update(&mut self, k: K, v: V) {
         let i = self.get_i(&k);
-        self.keys[i].iter().position(|x| *x == k).map(|x| self.vals[i][x] = v);
+        self.kv[i].iter_mut().find(|(x,_)| *x == k).map(|(_,y)| {*y = v});
     }
 
-    pub fn get_mut_def(&mut self, k: K, v: V) -> &mut V{
+    pub fn get_mut_def(&mut self, k: K, v: V) -> &mut (K,V) {
         let i = self.get_i(&k);
-        if let Some(x) = self.keys[i].iter().position(|x| *x == k) {
-            &mut self.vals[i][x]
+        let mut f = &self.kv[i];
+        if let Some(x) = f.iter().find(|(x,_)| *x == k) {
+            &mut x
         } else {
-            let len = self.keys[i].len();
+            let len = f.len();
 
-            self.keys[i].push(k);
-            self.vals[i].push(v);
+            f.push((k,v));
             self.stat += 1;
-            &mut self.vals[i][len]
+            &mut f[len]
         }
     }
 
-    pub fn values(&self) -> impl Iterator<Item=&V> {
-        self.vals.iter().flatten()
-    }
+    // pub fn values(&self) -> impl Iterator<Item=&V> {
+    //     self.kv.iter().flatten()
+    // }
 
     // pub fn entry(&mut self, k: K) -> Entry<V> {
     //     let i = self.get_i(&k);
@@ -114,15 +111,14 @@ impl<K: Hash + Eq + Clone,V : Clone,S: BuildHasher + Default> Default for PHashM
     }
 }
 
-impl<K: Hash + Eq + Clone,V : Clone,S: BuildHasher + Default> IntoIterator for PHashMap<K,V,S> {
-    type Item = (K, V);
-    type IntoIter = std::iter::Zip<std::iter::Flatten<std::vec::IntoIter<std::vec::Vec<K>>>, std::iter::Flatten<std::vec::IntoIter<std::vec::Vec<V>>>>;
+// impl<K: Hash + Eq + Clone,V : Clone,S: BuildHasher + Default> IntoIterator for PHashMap<K,V,S> {
+//     type Item = (K, V);
+//     type IntoIter = std::iter::Zip<std::iter::Flatten<std::vec::IntoIter<std::vec::Vec<K>>>, std::iter::Flatten<std::vec::IntoIter<std::vec::Vec<V>>>>;
 
-    fn into_iter(self) -> Self::IntoIter {
-        self.keys.into_iter().flatten().zip(self.vals.into_iter().flatten())
-    }
-
-}
+//     fn into_iter(self) -> Self::IntoIter {
+//         self.kv.into_iter().flatten().zip(self.vals.into_iter().flatten())
+//     }
+// }
 
 // pub enum Entry<'a, V: 'a> {
 //     Occupied(OccupiedEntry<'a, V>),
@@ -181,7 +177,7 @@ mod tests {
     #[bench]
     fn bench_phashmap_insert(b: &mut Bencher) {
         b.iter(|| {
-            let mut h: PHashMap<u16, u16> = PHashMap::new();
+            let mut h: PHashMap<u16, u16> = PHashMap::with_capacity(20000);
             for x in 0..10000 {
                 h.insert(x, 1);
             }
