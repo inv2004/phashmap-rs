@@ -76,17 +76,14 @@ impl<K: Hash + Eq + Clone,V : Clone,S: BuildHasher + Default> PHashMap<K,V,S> {
         self.kv[i].iter_mut().find(|(x,_)| *x == k).map(|(_,y)| {*y = v});
     }
 
-    pub fn get_mut_def(&mut self, k: K, v: V) -> &mut (K,V) {
+    pub fn get_mut_def(&mut self, k: K, v: V) -> &mut V {
         let i = self.get_i(&k);
-        let mut f = &self.kv[i];
-        if let Some(x) = f.iter().find(|(x,_)| *x == k) {
-            &mut x
+        if let Some(x) = self.kv[i].iter().position(|(x,_)| *x == k) {
+            &mut self.kv[i][x].1
         } else {
-            let len = f.len();
-
-            f.push((k,v));
-            self.stat += 1;
-            &mut f[len]
+            let len = self.kv[i].len();
+            self.kv[i].push((k,v));
+            &mut self.kv[i][len].1
         }
     }
 
